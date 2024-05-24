@@ -1,0 +1,15 @@
+torch==2.2.1
+torchvision==0.17.1
+matplotlib
+tensorboard
+torchinfo
+scikit-learn
+tqdm
+pandas
+h5py
+opencv-python
+numpy
+wget
+timm==0.4.5
+torchaudio
+npy-append-array

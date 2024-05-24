@@ -1,0 +1,51 @@
+{ 
+"model_settings": 
+    {
+    "ViT_config":  "base",
+    "ViT_patch_size": 32,
+    "perturb_scale": 0
+    },
+"data_settings":
+    {
+    "data_set": "HAM10000",
+    "num_classes": 7,
+    "num_workers": 2,
+    "channel_mean": [194.7913, 139.3656, 145.6066],
+    "channel_std": [36.0171, 38.9144, 43.3594],
+    "original_size": [450,600],
+    "input_size": [224,224],
+    "shuffle": true,
+    "tensorboard": true
+    },
+"training_settings": 
+    {
+    "max_epochs": 65,
+    "training": true,
+    "random_seed": 42,
+    "max_steps": 16315,
+    "steps_lr_warmup": 500,
+    "loss": "cross_entropy",
+    "class_weights": "ENS",
+    "ENS_beta": 0.9991,
+    "optimizer": "AdamW",
+    "learning_rate": 0.0001,
+    "SGD_momentum": 0.997,
+    "SGD_nesterov": false,
+    "Adam_betas": [0.9, 0.999],
+    "weight_decay": 0.0,
+    "lr_schedule": "cosine",
+    "gradient_clip": 1.0,
+    "training_batch_size": 32,
+    "training_augmentation": ["flip", "rotate", "standardize"],
+    "early_stopping": false,
+    "use_amp": false
+    },
+"evaluation_settings":
+    {
+    "evaluation": true,
+    "evaluation_batch_size": 128,
+    "evalution_augmentation": ["standardize"]
+    }
+}
+    
+

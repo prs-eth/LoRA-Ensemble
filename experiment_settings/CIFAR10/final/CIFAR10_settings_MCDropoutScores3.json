@@ -1,0 +1,51 @@
+{ 
+  "model_settings": {
+    "ViT_config":  "base",
+    "ViT_patch_size": 32
+  },
+  "MCDropout_settings": {
+    "p_drop": 0.2
+  },
+  "data_settings": {
+    "data_set": "CIFAR10",
+    "num_classes": 10,
+    "channel_mean": [125.3069, 122.9501, 113.8660],
+    "channel_std": [62.9933, 62.0886, 66.7050],
+    "num_workers": 2,
+    "original_size": [32,32],
+    "input_size": [224,224],
+    "training_files": ["data_batch_1", "data_batch_2", "data_batch_3", "data_batch_4", "data_batch_5"],
+    "evaluation_files": ["test_batch"],
+    "shuffle": false,
+    "tensorboard": true
+  },
+  "training_settings": {
+    "max_epochs": 16,
+    "training": true,
+    "random_seed": 12345,
+    "max_steps": 25008,
+    "steps_lr_warmup": 1000,
+    "loss": "cross_entropy",
+    "class_weights": "uniform",
+    "optimizer": "AdamW",
+    "learning_rate": 0.0001,
+    "SGD_momentum": 0.9,
+    "SGD_nesterov": false,
+    "Adam_betas": [0.9, 0.999],
+    "weight_decay": 0.0,
+    "lr_schedule": "cosine",
+    "gradient_clip": 1.0,
+    "training_batch_size": 32,
+    "training_augmentation": ["flip", "rotate", "standardize"],
+    "early_stopping": false,
+    "use_amp": false
+  },
+  "evaluation_settings": {
+    "evaluation": true,
+    "evaluation_batch_size": 32,
+    "evalution_augmentation": ["standardize"],
+    "NLL_Brier_Score": true
+  }
+}
+    
+

@@ -1,0 +1,71 @@
+{ 
+"model_settings": 
+    {
+    "ViT_config":  "DeiT_base384",
+    "ViT_patch_size": 16,
+    "perturb_scale": 1,
+    "max_perturb_layer": 1,
+    "head_init": "xavier_uniform",
+    "xavier_gain": 10,
+    "DeiT_version":"base384",
+    "imagenet_pretraining": true,
+    "audioset_pretraining": false
+    },
+  "data_settings": 
+    {
+    "fstride": 10,
+    "tstride": 10,
+    "audio_length": 512,
+    "data_set": "ESC50",
+    "num_classes": 50,
+    "num_workers":1,
+    "input_size": [224,224],
+    "shuffle": true,
+    "tensorboard": true
+    },
+    "LoRA_settings": 
+    {
+        "rank": 16,
+        "weight_init": "xavier_uniform",
+        "xavier_gain": 10,
+        "train_conv": false,
+        "train_pos": false,
+        "chunk_size": 1   
+    },
+"training_settings": 
+    {
+    "cross_validation": true,
+    "cross_validation_fold": 1,
+    "cross_validation_nr_folds": 5,
+    "max_epochs": 25,
+    "training": true,
+    "random_seed": 42,
+    "max_steps": 25000,
+    "steps_lr_warmup": 0,
+    "loss": "cross_entropy",
+    "class_weights": "uniform",
+    "ENS_beta": 0.9991,
+    "optimizer": "Adam",
+    "learning_rate": 0.0001,
+    "SGD_momentum": 0.997,
+    "SGD_nesterov": false,
+    "Adam_betas": [0.95, 0.999],
+    "weight_decay": 0.0000005,
+    "lr_schedule": "epoch_step",
+    "first_epoch_step": 5,
+    "epoch_step_gamma": 0.85,
+    "gradient_clip": 10000.0,
+    "training_batch_size": 1,
+    "training_augmentation": ["no_standardize"],
+    "early_stopping": false,
+    "use_amp": false
+    },
+ "evaluation_settings": 
+    {
+    "evaluation": true,
+    "evaluation_batch_size": 1,
+    "evalution_augmentation": ["no_standardize"]
+    }
+}
+    
+
