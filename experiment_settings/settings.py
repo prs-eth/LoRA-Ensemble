@@ -227,7 +227,7 @@ def get_optimizer(data: dict) -> None:
 
     # If Adam is the optimizer
     if data["training_settings"]["optimizer"] == "Adam":
-        # Initalize the optimizer and specify the settings
+        # Initialize the optimizer and specify the settings
         lr = data["training_settings"]["learning_rate"]
         betas = data["training_settings"]["Adam_betas"]
         weight_decay = data["training_settings"]["weight_decay"]
