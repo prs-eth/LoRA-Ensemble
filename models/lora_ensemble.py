@@ -46,7 +46,8 @@ class LoRAEnsemble(nn.Module):
             init_settings: dict = None,
             batch_mode: BatchMode = BatchMode.DEFAULT,
             init_head: Init_Head = Init_Head.DEFAULT,
-            head_settings: dict = None
+            head_settings: dict = None,
+            chunk_size: int = None
     ) -> None:
         """
         A LoRA-Ensemble model
@@ -73,6 +74,12 @@ class LoRAEnsemble(nn.Module):
             The batch mode to use, by default BatchMode.DEFAULT
             This encodes whether the data is repeated in the batch dimension
             to train all ensemble members on the same data or if the data is split between the ensemble members.
+        init_head : Init_Head, optional
+            Initialization method for the Ensemble Head, by default Init_Head.DEFAULT
+        head_settings : dict, optional
+            Settings for the initialization method, by default None
+        chunk_size : int, optional
+            The chunk size for LoRA parallelization, by default 0
         """
 
         # Call the super constructor
@@ -92,6 +99,9 @@ class LoRAEnsemble(nn.Module):
         # Set properties
         self.n_members = n_members  # Number of ensemble members
         self.lora_type = lora_type  # Which projections LoRA is applied to
+
+        # Set the chunk size for LoRA parallelization
+        self.chunk_size = chunk_size
 
         # Set the layers to apply LoRA to
         if lora_layers is None:
@@ -125,7 +135,8 @@ class LoRAEnsemble(nn.Module):
                             n_members=n_members,
                             initialize=True,
                             init_type=lora_init,
-                            init_settings=init_settings
+                            init_settings=init_settings,
+                            chunk_size=chunk_size
                         )
                         )
             dim = enc_layer.self_attention.embed_dim
@@ -137,7 +148,8 @@ class LoRAEnsemble(nn.Module):
                         n_members=n_members,
                         initialize=True,
                         init_type=lora_init,
-                        init_settings=init_settings
+                        init_settings=init_settings,
+                        chunk_size=chunk_size
                     )
                     )
 

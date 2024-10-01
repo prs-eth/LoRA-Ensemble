@@ -18,7 +18,8 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 
 # Custom imports
-from model_training_evaluation.scheduler import Cosine_Schedule, Constant_Schedule, Linear_Schedule
+from model_training_evaluation.scheduler import (Cosine_Schedule,
+                                                 Constant_Schedule, Linear_Schedule, Cyclic_Cosine_Schedule)
 import const
 from data.utils_data import download_CIFAR10, calculate_pixel_mean_and_variance, download_CIFAR100, \
     class_weights_inverse_num_of_samples, class_weights_effective_num_of_samples
@@ -281,7 +282,22 @@ def get_learning_rate_schedule(data: dict) -> None:
                                                                    data["training_settings"]["steps_lr_warmup"],
                                                                    data["training_settings"]["max_steps"])
         data["training_settings"]["lr_schedule_name"] = "linear"
-
+    elif data["training_settings"]["lr_schedule"] == "cyclic_cosine":
+        if "cyclic_cosine_min_lr" not in data["training_settings"]:
+            data["training_settings"]["cyclic_cosine_min_lr"] = None
+        if "burn_in_epochs" not in data["training_settings"]:
+            data["training_settings"]["burn_in_epochs"] = 0
+        if "steps_lr_warmup" not in data["training_settings"]:
+            data["training_settings"]["steps_lr_warmup"] = 0
+        data["training_settings"]["lr_schedule"] = Cyclic_Cosine_Schedule(
+                                                        data["training_settings"]["optimizer"],
+                                                        data["training_settings"]["max_epochs"],
+                                                        data["training_settings"]["max_steps"] // data["training_settings"]["max_epochs"],
+                                                        data["model_settings"]["n_cycles"],
+                                                        data["training_settings"]["cyclic_cosine_min_lr"],
+                                                        data["training_settings"]["burn_in_epochs"],
+                                                        data["training_settings"]["steps_lr_warmup"])
+        data["training_settings"]["lr_schedule_name"] = "cyclic_cosine"
     elif data["training_settings"]["lr_schedule"] == "epoch_step":
         data["training_settings"]["lr_schedule"] = torch.optim.lr_scheduler.MultiStepLR(data["training_settings"]["optimizer"],
                                                                                   list(range(data["training_settings"]["first_epoch_step"], 1000, 1)),
@@ -362,7 +378,7 @@ def get_loss(data: dict) -> None:
         raise ValueError("Loss not implemented or recognized")
 
 
-def read_interpret_json(path: str) -> dict:
+def read_interpret_json(path: str, nr_members: int) -> dict:
     """
     Function to read and interpret the json file.
     Adds implementations for data augmentation, optimizer, learning rate schedule and loss.
@@ -395,6 +411,13 @@ def read_interpret_json(path: str) -> dict:
 
     # Implement optimizer
     get_optimizer(data)
+
+    # Add the number of ensemble members to the settings dictionary
+    if "mode" in data["training_settings"].keys() and data["training_settings"]["mode"] == "snapshot":
+        data["model_settings"]["n_cycles"] = nr_members
+        data["model_settings"]["nr_members"] = 1
+    else:
+        data["model_settings"]["nr_members"] = nr_members
 
     # Implement learning rate schedule
     get_learning_rate_schedule(data)
@@ -502,6 +525,9 @@ def get_model(data: dict, ensemble_type: str) -> torch.nn.Module:
             lora_init = Init_Weight.DEFAULT
             init_settings = None
 
+        if "chunk_size" not in data["LoRA_settings"]:
+            data["LoRA_settings"]["chunk_size"] = None
+
         # Create the LoRA-Ensemble model
         ensemble_model = LoRAEnsemble(VisionTransformer(data["data_settings"]["num_classes"],
                                                         data["model_settings"]["ViT_config"],
@@ -511,8 +537,8 @@ def get_model(data: dict, ensemble_type: str) -> torch.nn.Module:
                                                         lora_init=lora_init,
                                                         init_settings=init_settings,
                                                         init_head=init_head,
-                                                        head_settings=head_settings
-                                      )
+                                                        head_settings=head_settings,
+                                                        chunk_size=data["LoRA_settings"]["chunk_size"])
         # Gather the model parameters that need training 
         ensemble_params = ensemble_model.gather_params()
 
@@ -763,14 +789,11 @@ def get_settings(path: str, ensemble_type: str, nr_members: int) -> dict:
     """
 
     # Process the json file
-    data = read_interpret_json(path)
+    data = read_interpret_json(path, nr_members)
 
     # Set the random seed
     seed = data["training_settings"]["random_seed"]
     utils.set_seed(seed)
-
-    # Add the number of ensemble members to the settings dictionary
-    data["model_settings"]["nr_members"] = nr_members
 
     # Add the ensemble model to the settings dictionary
     data["model_settings"]["ensemble_type"] = ensemble_type
@@ -781,9 +804,14 @@ def get_settings(path: str, ensemble_type: str, nr_members: int) -> dict:
 
     # Generate file name for saving results and models
     data["data_settings"]["json_file_name"] = os.path.basename(path).split(".")[0]
-    data["data_settings"]["result_file_name"] = \
-        (f"{ensemble_type}_ViT_{data['model_settings']['ViT_config']}_{data['model_settings']['ViT_patch_size']}_"
-         f"{data['model_settings']['nr_members']}_members_{data['data_settings']['json_file_name']}")
+    if "mode" in data["training_settings"] and data["training_settings"]["mode"] == "snapshot":
+        data["data_settings"]["result_file_name"] = \
+            (f"{ensemble_type}_ViT_{data['model_settings']['ViT_config']}_{data['model_settings']['ViT_patch_size']}_"
+             f"{data['model_settings']['n_cycles']}_members_{data['data_settings']['json_file_name']}")
+    else:
+        data["data_settings"]["result_file_name"] = \
+            (f"{ensemble_type}_ViT_{data['model_settings']['ViT_config']}_{data['model_settings']['ViT_patch_size']}_"
+             f"{data['model_settings']['nr_members']}_members_{data['data_settings']['json_file_name']}")
     data["data_settings"]["result_file_name"] = data["data_settings"]["result_file_name"].replace("-", "_")
 
     if "timing" not in data["evaluation_settings"]:

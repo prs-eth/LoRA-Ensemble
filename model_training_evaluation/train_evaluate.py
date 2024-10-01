@@ -7,6 +7,8 @@ Implements the training pipeline for this project
 ### IMPORTS ###
 # Built-in imports
 import time
+import shutil
+from typing import Tuple
 
 # Lib imports
 import torch
@@ -19,9 +21,9 @@ from npy_append_array import NpyAppendArray
 # Custom imports
 from utils_uncertainty import _ECELoss, function_space_analysis
 from models.lora_ensemble import BatchMode
+from models.model_loader import load_model
 from utils_GPU import DEVICE
 import const
-
 
 ### AUTHORSHIP INFORMATION ###
 __author__ = ["Michelle Halbheer", "Dominik Mühlematter"]
@@ -150,7 +152,7 @@ def train_evaluate_ensemble(settings: dict, batch_mode: BatchMode = BatchMode.DE
                     # count number of gradient updates
                     gradient_updates += 1
 
-                    # update learning rate 
+                    # update learning rate
                     if settings["training_settings"]["lr_schedule_name"] != "epoch_step":
                         lr_schedule.step()
 
@@ -179,7 +181,7 @@ def train_evaluate_ensemble(settings: dict, batch_mode: BatchMode = BatchMode.DE
             epoch_train_time = epoch_end_time - epoch_start_time
             train_time_list.append(epoch_train_time)
 
-            # update learning rate 
+            # update learning rate
             if settings["training_settings"]["lr_schedule_name"] == "epoch_step":
                 lr_schedule.step()
 
@@ -202,6 +204,8 @@ def train_evaluate_ensemble(settings: dict, batch_mode: BatchMode = BatchMode.DE
                 # iterate over validation data batches
                 for batch_idx, (data_val, target) in enumerate(val_data_loader):
 
+                    # print(f"Batch {batch_idx} of {len(val_data_loader)}")
+
                     # move validation data and labels to device (GPU if possible)
                     data_val = data_val.to(DEVICE)
 
@@ -214,7 +218,7 @@ def train_evaluate_ensemble(settings: dict, batch_mode: BatchMode = BatchMode.DE
 
                         if settings["model_settings"]["ensemble_type"] == "LoRA_Former" or \
                                 not settings["evaluation_settings"]["timing"]:
-                            
+
                             # Get the inference start time
                             inference_start_time = time.time()
 
@@ -267,13 +271,15 @@ def train_evaluate_ensemble(settings: dict, batch_mode: BatchMode = BatchMode.DE
                         val_criterion = nn.NLLLoss(weight=criterion.weight)
                         val_loss += val_criterion(output_log_softmax, target)
 
-                        if "NLL_Brier_Score" in settings["evaluation_settings"].keys() and settings["evaluation_settings"]["NLL_Brier_Score"] is True:
+                        if "NLL_Brier_Score" in settings["evaluation_settings"].keys() and \
+                                settings["evaluation_settings"]["NLL_Brier_Score"] is True:
                             # calculate NLL loss
-                            NLL = nn.NLLLoss(reduction = "sum")
+                            NLL = nn.NLLLoss(reduction="sum")
                             nll += NLL(output_log_softmax, target)
 
                             # calculate brier score
-                            brier_score = torch.sum((output_softmax.cpu() - torch.eye(output_softmax.shape[1])[target.cpu()]) ** 2)
+                            brier_score = torch.sum(
+                                (output_softmax.cpu() - torch.eye(output_softmax.shape[1])[target.cpu()]) ** 2)
                             brier_score_sum += brier_score
 
                     # Index with max probability in multi-class setting
@@ -330,7 +336,8 @@ def train_evaluate_ensemble(settings: dict, batch_mode: BatchMode = BatchMode.DE
             disagreement = (2 / (n_members * (n_members - 1))) * disagreement * (1 / len(val_data_loader.dataset))
             distance_predicted_distributions = (2 / (n_members * (n_members - 1))) * distance_predicted_distributions
 
-        if "cross_validation" in settings["training_settings"].keys() and settings["training_settings"]["cross_validation"] == True:
+        if ("cross_validation" in settings["training_settings"].keys() and
+                settings["training_settings"]["cross_validation"]):
             if epoch == 0:
                 # Save stats
                 model_name = settings["data_settings"]["result_file_name"]
@@ -340,13 +347,14 @@ def train_evaluate_ensemble(settings: dict, batch_mode: BatchMode = BatchMode.DE
 
                 # Create stats string
                 header_string = ("epoch,train_loss,val_loss,accuracy,f1,precision,recall,ece,disagreement,"
-                                "distance_predicted_distributions\n")
-                if settings["training_settings"]["training"] is True:
-                    stats_string = (f"{epoch+1},{train_loss / len(train_dataloader)},{val_loss / len(val_data_loader)},{accuracy},{f1},"
-                                f"{precision},{recall},{ece[0]},{disagreement},{distance_predicted_distributions}\n")
+                                 "distance_predicted_distributions\n")
+                if settings["training_settings"]["training"]:
+                    stats_string = (
+                        f"{epoch + 1},{train_loss / len(train_dataloader)},{val_loss / len(val_data_loader)},{accuracy},{f1},"
+                        f"{precision},{recall},{ece[0]},{disagreement},{distance_predicted_distributions}\n")
                 else:
-                    stats_string = (f"{epoch+1},{None},{val_loss / len(val_data_loader)},{accuracy},{f1},"
-                                f"{precision},{recall},{ece[0]},{disagreement},{distance_predicted_distributions}\n")
+                    stats_string = (f"{epoch + 1},{None},{val_loss / len(val_data_loader)},{accuracy},{f1},"
+                                    f"{precision},{recall},{ece[0]},{disagreement},{distance_predicted_distributions}\n")
 
                 # Write stats to file
                 with open(stats_path_cross_validation, "w") as stats_file:
@@ -354,8 +362,9 @@ def train_evaluate_ensemble(settings: dict, batch_mode: BatchMode = BatchMode.DE
                     stats_file.write(stats_string)
             else:
                 # append stats to existing csv file
-                stats_string = (f"{epoch+1},{train_loss / len(train_dataloader)},{val_loss / len(val_data_loader)},{accuracy},{f1}," 
-                                f"{precision},{recall},{ece[0]},{disagreement},{distance_predicted_distributions}\n")
+                stats_string = (
+                    f"{epoch + 1},{train_loss / len(train_dataloader)},{val_loss / len(val_data_loader)},{accuracy},{f1},"
+                    f"{precision},{recall},{ece[0]},{disagreement},{distance_predicted_distributions}\n")
                 with open(stats_path_cross_validation, "a") as stats_file:
                     stats_file.write(stats_string)
 
@@ -427,8 +436,35 @@ def train_evaluate_ensemble(settings: dict, batch_mode: BatchMode = BatchMode.DE
                     torch.save(model_state_dict, save_path)
                     print(f"Model saved to {save_path} with accuracy {accuracy} after {gradient_updates} iterations")
 
+            if "mode" in settings["training_settings"].keys() and settings["training_settings"]["mode"] == "snapshot":
+                if lr_schedule.check_cycle_state(gradient_updates):
+                    cycle_count = lr_schedule.get_cycle_count(gradient_updates)
+
+                    model_name = settings["data_settings"]["result_file_name"]
+                    save_name = f"{model_name}_snapshot{cycle_count}.pt"
+                    save_path = const.MODEL_STORAGE_DIR.joinpath(save_name)
+                    model_state_dict = settings["model_settings"]["model_params"]
+                    const.MODEL_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+                    torch.save(model_state_dict, save_path)
+
+                    tmp_dir = const.STORAGE_DIR.joinpath("tmp", model_name)
+                    tmp_dir.mkdir(parents=True, exist_ok=True)
+                    predictions_file = tmp_dir.joinpath(f"{model_name}_predictions_snapshot{cycle_count}.npy")
+                    logits_prediction_file = tmp_dir.joinpath(f"{model_name}_logits_snapshot{cycle_count}.npy")
+                    labels_file = tmp_dir.joinpath(f"{model_name}_labels.npy")
+
+                    # Save predictions
+                    np.save(predictions_file, predictions)
+                    np.save(logits_prediction_file, logits_prediction.cpu().detach().numpy())
+
+                    if cycle_count == 0:
+                        np.save(labels_file, labels)
+
+                    print(f"\n\nSnapshot model saved to {save_path} with accuracy {accuracy} after {gradient_updates} iterations\n\n")
+
             # check if maximum number of steps is reached
-            if finish_training:
+            if (finish_training and
+                    ("mode" not in settings["training_settings"].keys() or settings["training_settings"]["mode"] != "snapshot")):
                 # Save final model
                 if settings["training_settings"]["early_stopping"] is False:
                     model_name = settings["data_settings"]["result_file_name"]
@@ -442,11 +478,16 @@ def train_evaluate_ensemble(settings: dict, batch_mode: BatchMode = BatchMode.DE
         # Print validation metrics if training is disabled
         else:
             print(
-            f'Validation: Epoch [{epoch + 1}/{settings["training_settings"]["max_epochs"]}], Loss: {val_loss / len(val_data_loader)}, Accuracy: {accuracy}, F1: {f1}, Precision: {precision}, Recall: {recall}, ECE: {ece[0]}, Disagreement: {disagreement}, Distance predicted distributions: {distance_predicted_distributions}')
+                f'Validation: Epoch [{epoch + 1}/{settings["training_settings"]["max_epochs"]}], Loss: {val_loss / len(val_data_loader)}, Accuracy: {accuracy}, F1: {f1}, Precision: {precision}, Recall: {recall}, ECE: {ece[0]}, Disagreement: {disagreement}, Distance predicted distributions: {distance_predicted_distributions}')
 
         if not settings["training_settings"]["training"]:
             # If model is not training only run through the loop once
             break
+
+    if "mode" in settings["training_settings"].keys() and settings["training_settings"]["mode"] == "snapshot":
+        accuracy, f1, precision, recall, ece, nll, brier_score_sum = evaluate_snapshot(settings)
+        train_loss, val_loss = np.nan, np.nan
+        disagreement, distance_predicted_distributions = np.nan, np.nan
 
     # Save stats
     model_name = settings["data_settings"]["result_file_name"]
@@ -459,16 +500,17 @@ def train_evaluate_ensemble(settings: dict, batch_mode: BatchMode = BatchMode.DE
                      "distance_predicted_distributions\n")
     if settings["training_settings"]["training"] is True:
         stats_string = (f"{train_loss / len(train_dataloader)},{val_loss / len(val_data_loader)},{accuracy},{f1},"
-                    f"{precision},{recall},{ece[0]},{disagreement},{distance_predicted_distributions}\n")
+                        f"{precision},{recall},{ece[0]},{disagreement},{distance_predicted_distributions}\n")
     else:
         stats_string = (f"{None},{val_loss / len(val_data_loader)},{accuracy},{f1},"
-                    f"{precision},{recall},{ece[0]},{disagreement},{distance_predicted_distributions}\n")
-        
-    if "NLL_Brier_Score" in settings["evaluation_settings"].keys() and settings["evaluation_settings"]["NLL_Brier_Score"] is True:
+                        f"{precision},{recall},{ece[0]},{disagreement},{distance_predicted_distributions}\n")
+
+    if "NLL_Brier_Score" in settings["evaluation_settings"].keys() and settings["evaluation_settings"][
+        "NLL_Brier_Score"] is True:
         header_string_NLL_Brier = ("train_loss,val_loss,accuracy,f1,precision,recall,ece,disagreement,"
-                     "distance_predicted_distributions, NLL, Brier\n")
+                                   "distance_predicted_distributions, NLL, Brier\n")
         stats_string_NLL_Brier = (f"{None},{val_loss / len(val_data_loader)},{accuracy},{f1},"
-                    f"{precision},{recall},{ece[0]},{disagreement},{distance_predicted_distributions},{nll / val_data_loader.dataset.__len__()},{brier_score_sum / val_data_loader.dataset.__len__()}\n")
+                                  f"{precision},{recall},{ece[0]},{disagreement},{distance_predicted_distributions},{nll / val_data_loader.dataset.__len__()},{brier_score_sum / val_data_loader.dataset.__len__()}\n")
         # Write stats to file
         model_name = settings["data_settings"]["result_file_name"]
         stats_name_nll_brier = f"{model_name}_statsNLLBrier.csv"
@@ -490,3 +532,86 @@ def train_evaluate_ensemble(settings: dict, batch_mode: BatchMode = BatchMode.DE
     # Print average times
     print("Average training time per epoch: ", avg_train_time)
     print("Average inference time per batch: ", avg_inference_time)
+
+
+def evaluate_snapshot(settings: dict) -> Tuple[float, float, float, float, float]:
+    """
+    Evaluate a snapshot model.
+
+    Parameters
+    ----------
+    settings : dict
+        Experiment settings as well as any other information passed on from loading
+    model_path : str
+        Path to the model to evaluate
+
+    Returns
+    -------
+    """
+
+    model_name = settings["data_settings"]["result_file_name"]
+
+    tmp_dir = const.STORAGE_DIR.joinpath("tmp", model_name)
+
+    # Load the labels
+    labels_file = tmp_dir.joinpath(f"{model_name}_labels.npy")
+    labels = np.load(labels_file)
+    labels = torch.from_numpy(labels)
+    labels = labels.type(torch.LongTensor)
+
+    logits_stacked = []
+
+    for cycle in range(settings["model_settings"]["nr_members"]):
+        # Load logit predictions
+        logits_prediction_file = tmp_dir.joinpath(f"{model_name}_logits_snapshot{cycle}.npy")
+        logits_predictions = np.load(logits_prediction_file)
+        logits_stacked.append(logits_predictions)
+
+    logits_stacked = np.stack(logits_stacked)
+
+    logits_avg = logits_stacked.mean(axis=0)
+
+    softmax = nn.Softmax(dim=2)
+    output_softmax = softmax(torch.from_numpy(logits_stacked)).mean(dim=0)
+    output_log_softmax = torch.log(output_softmax)
+
+    predictions_avg = np.argmax(output_softmax, axis=1)
+
+    # Define the ECE criterion
+    if DEVICE == 'cuda':
+        # ece_criterion = _ECELoss(multi_label=settings["data_settings"]["multi_label"]).cuda()
+        ece_criterion = _ECELoss().cuda()
+    else:
+        # ece_criterion = _ECELoss(multi_label=settings["data_settings"]["multi_label"])
+        ece_criterion = _ECELoss()
+
+    # Construct the reliability diagram filename
+    reliability_diagram_name = "reliability_diagram_{}".format(
+        settings['data_settings']['result_file_name'])
+    # Calculate the ECE and plot the reliability diagram
+    ece, accs, confs, accuracy, avg_conf = ece_criterion.forward(torch.tensor(logits_avg).to(DEVICE),
+                                                                 torch.tensor(labels).to(DEVICE),
+                                                                 plot=True,
+                                                                 file_name=reliability_diagram_name)
+
+    # Calculate the f1, precision and recall
+    f1 = f1_score(labels, predictions_avg, average='macro')
+    precision = precision_score(labels, predictions_avg, average='macro')
+    recall = recall_score(labels, predictions_avg, average='macro')
+
+    if "NLL_Brier_Score" in settings["evaluation_settings"].keys() and \
+            settings["evaluation_settings"]["NLL_Brier_Score"] is True:
+        # calculate NLL loss
+        NLL = nn.NLLLoss(reduction="sum")
+        nll = NLL(output_log_softmax, labels)
+
+        # calculate brier score
+        brier_score = torch.sum(
+            (output_softmax.cpu() - torch.eye(output_softmax.shape[1])[labels.cpu()]) ** 2)
+    else:
+        nll = np.nan
+        brier = np.nan
+
+    # shutil.rmtree(tmp_dir)
+
+    return accuracy, f1, precision, recall, ece, nll, brier_score

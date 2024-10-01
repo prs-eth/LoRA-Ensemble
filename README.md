@@ -88,24 +88,27 @@ python main.py CIFAR100_settings_LoRA1.json LoRA_Former 4 LoRA_Former_ViT_base_3
 ## CIFAR-100
 The table below shows the evaluation results obtained using different methods. Each method was trained five times with varying random seeds.
 
-| Method (ViT)              | Accuracy  | ECE   | Settings name*     | Model weights |
-|----------------------|------------------------|-----------------------|-------------------|------------------------------|
-| Single Network       | $76.6\pm0.2$           | $0.144\pm0.001$       |CIFAR100_settings_explicit|Deep_Ensemble_ViT_base_32_1_members_CIFAR100_settings_explicit1.pt|
-| Single Network with LoRA | $79.6\pm0.2$      | $\textbf{0.014}\pm0.003$ |CIFAR100_settings_LoRA|LoRA_Former_ViT_base_32_1_members_CIFAR100_settings_LoRA1.pt|
-| MC Dropout           | $77.1\pm0.5$           | $0.055\pm0.002$       |CIFAR100_settings_MCDropout|MCDropout_ViT_base_32_16_members_CIFAR100_settings_MCDropout1.pt|
-| Explicit Ensemble    | $\underline{79.8}\pm0.2$ | $0.098\pm0.001$     |CIFAR100_settings_explicit|Deep_Ensemble_ViT_base_32_16_members_CIFAR100_settings_explicit1.pt|
-| LoRA-Ensemble        | $\textbf{82.5}\pm0.1$ | $\underline{0.035}\pm0.001$ |CIFAR100_settings_LoRA|LoRA_Former_ViT_base_32_16_members_CIFAR100_settings_LoRA1.pt|
+| Method (ViT)         | Accuracy  | ECE                         | Settings name*              | Model weights                                                       |
+|----------------------|------------------------|-----------------------------|-----------------------------|---------------------------------------------------------------------|
+| Single Network       | $76.6\pm0.2$           | $0.144\pm0.001$             | CIFAR100_settings_explicit  | Deep_Ensemble_ViT_base_32_1_members_CIFAR100_settings_explicit1.pt  |
+| Single Network with LoRA | $79.6\pm0.2$      | $\textbf{0.014}\pm0.003$    | CIFAR100_settings_LoRA      | LoRA_Former_ViT_base_32_1_members_CIFAR100_settings_LoRA1.pt        |
+| MC Dropout           | $77.1\pm0.5$           | $0.055\pm0.002$             | CIFAR100_settings_MCDropout | MCDropout_ViT_base_32_16_members_CIFAR100_settings_MCDropout1.pt    |
+ | Snapshot Ensemble    | $77.0\pm0.1$         | $0.123\pm0.002$              | CIFAR100_settings_Snapshot  | Deep_Ensemble_ViT_base_32_16_members_CIFAR100_settings_Snapshot1.pt | 
+| Explicit Ensemble    | $\underline{79.8}\pm0.2$ | $0.098\pm0.001$             | CIFAR100_settings_explicit  | Deep_Ensemble_ViT_base_32_16_members_CIFAR100_settings_explicit1.pt |
+| LoRA-Ensemble        | $\textbf{82.5}\pm0.1$ | $\underline{0.035}\pm0.001$ | CIFAR100_settings_LoRA      | LoRA_Former_ViT_base_32_16_members_CIFAR100_settings_LoRA1.pt       |
 
 \* Settings name is followed by a number in the range 1-5 indicating the used random seed.
 
 ## HAM10000
-The table below shows the evaluation results obtained using different methods. Each method was trained five times with varying random seeds.
+The table below shows the evaluation results obtained using different methods. Each method was trained five times with varying random seeds. 
+
 | Method (ViT)               | Accuracy| ECE  | Settings name*     | Model weights |
 |----------------------|------------------------|-----------------------|-------------------|------------------------------|
 | Single Network       | $84.3\pm0.5$           | $0.136\pm0.006$       |HAM10000_settings_explicit|Deep_Ensemble_ViT_base_32_1_members_HAM10000_settings_explicit1.pt|
 | Single Network with LoRA | $83.2\pm0.7$      | $0.085\pm0.004$       |HAM10000_settings_LoRA|LoRA_Former_ViT_base_32_1_members_HAM10000_settings_LoRA1.pt|
-| MC Dropout           | $83.7\pm0.4$           | $\underline{0.099}\pm0.007$ |HAM10000_settings_MCDropout|MCDropout_ViT_base_32_16_members_HAM10000_settings_MCDropout1.pt|
+| MC Dropout           | $83.7\pm0.4$           | $0.099\pm0.007$ |HAM10000_settings_MCDropout|MCDropout_ViT_base_32_16_members_HAM10000_settings_MCDropout1.pt|
 | Explicit Ensemble    | $\underline{85.7}\pm0.3$ | $0.106\pm0.002$     |HAM10000_settings_explicit|Deep_Ensemble_ViT_base_32_16_members_HAM10000_settings_explicit1.pt|
+| Snapshot Ensemble    | $84.9\pm0.3$         | $\underline{0.058}\pm0.004$ |HAM10000_settings_Snapshot|Deep_Ensemble_ViT_base_32_16_members_HAM10000_settings_Snapshot1.pt|
 | LoRA-Ensemble        | $\textbf{88.0}\pm0.2$ | $\textbf{0.037}\pm0.002$ |HAM10000_settings_LoRA|LoRA_Former_ViT_base_32_16_members_HAM10000_settings_LoRA1.pt|
 
 \* Settings name is followed by a number in the range 1-5 indicating the used random seed.
