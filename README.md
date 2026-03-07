@@ -1,5 +1,5 @@
 # LoRA-Ensemble: Efficient Uncertainty Modelling for Self-attention Networks
-Dominik J. Mühlematter, Michelle Halbheer, Alexander Becker, Dominik Narnhofer, Helge Aasen, Konrad Schindler and Mehmet Ozgur Turkoglu - 2024
+Dominik J. Mühlematter, Michelle Halbheer, Alexander Becker, Dominik Narnhofer, Helge Aasen, Konrad Schindler and Mehmet Ozgur Turkoglu - Transactions on Machine Learning Research, 2026
 
 [[Paper on ArXiv]](https://arxiv.org/abs/2405.14438)
 ## Abstract
@@ -11,8 +11,8 @@ If you find our work useful or interesting or use our code, please cite our pape
 @misc{
   title = {LoRA-Ensemble: Efficient Uncertainty Modelling for Self-attention Networks},
   author = {M\"uhlematter, Dominik J. and Halbheer, Michelle and Becker, Alexander and Narnhofer, Dominik and Aasen, Helge and Schindler, Konrad and Turkoglu, Mehmet Ozgur}
-  year = {2024}
-  note = {arXiv:2405.14438}
+  journal={Transactions on Machine Learning Research},
+  year = {2026}
 }
 ```
 
