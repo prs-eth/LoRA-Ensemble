@@ -8,11 +8,13 @@ Numerous crucial tasks in real-world decision-making rely on machine learning al
 ## Citation
 If you find our work useful or interesting or use our code, please cite our paper as follows
 ```latex
-@misc{
-  title = {LoRA-Ensemble: Efficient Uncertainty Modelling for Self-attention Networks},
-  author = {M\"uhlematter, Dominik J. and Halbheer, Michelle and Becker, Alexander and Narnhofer, Dominik and Aasen, Helge and Schindler, Konrad and Turkoglu, Mehmet Ozgur}
+@article{
+  muehlematter2026loraensemble,
+  title={Lo{RA}-Ensemble: Efficient Uncertainty Modelling for Self-Attention Networks},
+  author={Dominik J. M{\"u}hlematter and Michelle Halbheer and Alexander Becker and Dominik Narnhofer and Helge Aasen and Konrad Schindler and Mehmet Ozgur Turkoglu},
   journal={Transactions on Machine Learning Research},
-  year = {2026}
+  issn={2835-8856},
+  year={2026},
 }
 ```
 
